@@ -422,7 +422,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93231eb55d7bac84a9373a18f816406d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shuffleAmount: 10
+  shuffleAmount: 9
 --- !u!114 &2056368355
 MonoBehaviour:
   m_ObjectHideFlags: 0
