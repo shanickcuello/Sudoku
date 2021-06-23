@@ -9,15 +9,30 @@ public class Board : MonoBehaviour
     [SerializeField] int shuffleAmount;
 
     int[,] solvedGrid = new int[9, 9];
+    int[,] riddleGrid = new int[9, 9];
+    [SerializeField] int piecesToErase; // cuantos mas borrres mas dificil
+
     string debugText;
 
+    [SerializeField] Transform A1, A2, A3, B1, B2, B3, C1, C2, C3;
+    [SerializeField] GameObject buttonPrefab;
+
+    [SerializeField] Dificulties difficulty;
 
     void Start()
     {
         InitGrid(ref solvedGrid);
-        DebugGrid(ref solvedGrid);
+        //DebugGrid(ref solvedGrid);
         ShuffleGrid(ref solvedGrid, shuffleAmount);
+        CreateRiddleGrid();
+        CreateButtons();
     }
+
+    #region Dificult
+
+
+
+    #endregion
 
     void InitGrid(ref int[,] grid)
     {
@@ -100,4 +115,132 @@ public class Board : MonoBehaviour
         }
     }
 
+    void CreateRiddleGrid()
+    {
+        //Copiar la anterior solvegrid
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                riddleGrid[i, j] = solvedGrid[i, j];
+            }
+        }
+
+        //Setear la dificulatad
+        SetDifficulty();
+        //borrar los numeros que no queremos
+
+        for (int i = 0; i < piecesToErase; i++)
+        {
+            int x1 = Random.Range(0, 9);
+            int y1 = Random.Range(0, 9);
+            //Si hay un cero lo tiro de nuevo hasta encontrar uno sin 0
+            while (riddleGrid[x1, y1] == 0)
+            {
+                x1 = Random.Range(0, 9);
+                y1 = Random.Range(0, 9);
+            }
+            //una vez que lo encontamos sin 0 lo sesteamos a 0
+            riddleGrid[x1, y1] = 0;
+        }
+        DebugGrid(ref riddleGrid);
+    }
+
+    void CreateButtons()
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                GameObject newBtn = Instantiate(buttonPrefab);
+                NumberField numField = newBtn.GetComponent<NumberField>();
+
+                //Setear los valores. 
+                numField.SetValue(i, j, riddleGrid[i, j], i + "," + j, this);
+                newBtn.name = i + "," + j;
+
+                //Parentearlos
+                //A1 
+                if (i < 3 && j < 3)
+                    newBtn.transform.SetParent(A1, false);
+                //A2
+                if (i < 3 && j > 2 && j < 6)
+                    newBtn.transform.SetParent(A2, false);
+                //A3
+                if (i < 3 && j > 5)
+                    newBtn.transform.SetParent(A3, false);
+                //B1
+                if (i > 2 && i < 6 && j < 3)
+                    newBtn.transform.SetParent(B1, false);
+                //B2
+                if (i > 2 && i < 6 && j > 2 && j < 6)
+                    newBtn.transform.SetParent(B2, false);
+                //B3
+                if (i > 2 && i < 6 && j > 5)
+                    newBtn.transform.SetParent(B3, false);
+                //C1
+                if (i > 5 && j < 3)
+                    newBtn.transform.SetParent(C1, false);
+                //C2
+                if (i > 5 && j > 2 && j < 6)
+                    newBtn.transform.SetParent(C2, false);
+                //C3
+                if (i > 5 && j > 5)
+                    newBtn.transform.SetParent(C3, false);
+            }
+        }
+    }
+
+    public void SetInputInRiddle(int x, int y, int value) => riddleGrid[x, y] = value;
+
+    public void SetDifficulty()
+    {
+        switch (difficulty)
+        {
+            case Dificulties.DEBUG:
+                piecesToErase = 3;
+                break;
+            case Dificulties.EASY:
+                piecesToErase = 25;
+                break;
+            case Dificulties.MEDIUM:
+                piecesToErase = 35;
+                break;
+            case Dificulties.HARD:
+                piecesToErase = 45;
+                break;
+            case Dificulties.INSANE:
+                piecesToErase = 65;
+                break;
+        }
+    }
+
+    public void CheckComplete()
+    {
+        if (CheckIfWon())
+            Debug.Log("Win");
+        else
+            Debug.Log("Loose");
+    }
+    bool CheckIfWon()
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                if (riddleGrid[i, j] != solvedGrid[i, j])
+                    return false;
+            }
+        }
+        return true;
+    }
+}
+
+public enum Dificulties
+{
+    DEBUG,
+    EASY,
+    MEDIUM,
+    HARD,
+    INSANE
 }
