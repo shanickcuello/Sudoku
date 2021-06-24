@@ -6,12 +6,15 @@ public class Board : MonoBehaviour
 {
     //[SerializeField] int sizeArray;
 
+    List<NumberField> fieldList = new List<NumberField>();
+
     [SerializeField] int shuffleAmount;
 
     int[,] solvedGrid = new int[9, 9];
     int[,] riddleGrid = new int[9, 9];
     [SerializeField] int piecesToErase; // cuantos mas borrres mas dificil
 
+    int maxHint;
     string debugText;
 
     [SerializeField] Transform A1, A2, A3, B1, B2, B3, C1, C2, C3;
@@ -21,18 +24,19 @@ public class Board : MonoBehaviour
 
     void Start()
     {
-        InitGrid(ref solvedGrid);
-        //DebugGrid(ref solvedGrid);
-        ShuffleGrid(ref solvedGrid, shuffleAmount);
-        CreateRiddleGrid();
+        FillGridBase(ref solvedGrid);
+        SolveGrid(ref solvedGrid);
+        CreateRiddleGrid(ref solvedGrid, ref riddleGrid);
         CreateButtons();
+
+
+        //VIEJOS METODOS
+        //InitGrid(ref solvedGrid);
+        ////DebugGrid(ref solvedGrid);
+        //ShuffleGrid(ref solvedGrid, shuffleAmount);
+        //CreateRiddleGrid();
     }
 
-    #region Dificult
-
-
-
-    #endregion
 
     void InitGrid(ref int[,] grid)
     {
@@ -159,6 +163,9 @@ public class Board : MonoBehaviour
                 numField.SetValue(i, j, riddleGrid[i, j], i + "," + j, this);
                 newBtn.name = i + "," + j;
 
+                if (riddleGrid[i, j] == 0)
+                    fieldList.Add(numField);
+
                 //Parentearlos
                 //A1 
                 if (i < 3 && j < 3)
@@ -199,18 +206,23 @@ public class Board : MonoBehaviour
         {
             case Dificulties.DEBUG:
                 piecesToErase = 3;
+                maxHint = 3;
                 break;
             case Dificulties.EASY:
                 piecesToErase = 25;
+                maxHint = 5;
                 break;
             case Dificulties.MEDIUM:
+                maxHint = 7;
                 piecesToErase = 35;
                 break;
             case Dificulties.HARD:
                 piecesToErase = 45;
+                maxHint = 10;
                 break;
             case Dificulties.INSANE:
                 piecesToErase = 65;
+                maxHint = 1;
                 break;
         }
     }
@@ -234,6 +246,206 @@ public class Board : MonoBehaviour
         }
         return true;
     }
+
+    //Called from btn 
+    public void ShowHint()
+    {
+        if (fieldList.Count > 0 && maxHint > 0)
+        {
+            int randomIndex = Random.Range(0, fieldList.Count);
+            maxHint--;
+
+            riddleGrid[fieldList[randomIndex].GetX(), fieldList[randomIndex].GetY()] =
+                solvedGrid[fieldList[randomIndex].GetX(), fieldList[randomIndex].GetY()];
+
+            fieldList[randomIndex].SetHint(riddleGrid[fieldList[randomIndex].GetX(), fieldList[randomIndex].GetY()]);
+            fieldList.RemoveAt(randomIndex);
+        }
+        else
+        {
+            Debug.Log("Out of hints");
+        }
+    }
+
+    #region BACKTRACKING
+
+    bool ColumnContainsNumber(int y, int value, ref int[,] grid)
+    {
+        for (int x = 0; x < 9; x++)
+        {
+            if (grid[x, y] == value)
+                return true;
+        }
+
+        return false;
+    }
+
+    bool RowContainsNumber(int x, int value, ref int[,] grid)
+    {
+        for (int y = 0; y < 9; y++)
+        {
+            if (grid[x, y] == value)
+                return true;
+        }
+
+        return false;
+    }
+    bool BlockContainsNumber(int x, int y, int value, ref int[,] grid)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                if (grid[x - (x % 3) + i, y - (y % 3) + j] == value)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    bool CheckAll(int x, int y, int value, ref int[,] grid)
+    {
+        if (ColumnContainsNumber(y, value, ref grid)) return false;
+        if (RowContainsNumber(x, value, ref grid)) return false;
+        if (BlockContainsNumber(x, y, value, ref grid)) return false;
+
+        return true;
+    }
+
+    bool IsValidGrid(ref int[,] grid)
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                if (grid[i, j] == 0)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    void FillGridBase(ref int[,] grid)
+    {
+        List<int> rowValues = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        List<int> columnValues = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        int value = rowValues[Random.Range(0, rowValues.Count)];
+        grid[0, 0] = value;
+        rowValues.Remove(value);
+        columnValues.Remove(value);
+
+        //Rows
+        for (int i = 1; i < 9; i++)
+        {
+            value = rowValues[Random.Range(0, rowValues.Count)];
+            grid[i, 0] = value;
+            rowValues.Remove(value);
+        }
+
+        //Columns
+        for (int i = 1; i < 9; i++)
+        {
+            value = columnValues[Random.Range(0, columnValues.Count)];
+            if (i < 3)
+            {
+                while (BlockContainsNumber(0, 0, value, ref grid))
+                {
+                    value = columnValues[Random.Range(0, columnValues.Count)];
+                }
+            }
+            grid[0, i] = value;
+            columnValues.Remove(value);
+        }
+    }
+
+    bool SolveGrid(ref int[,] grid)
+    {
+        DebugGrid(ref grid);
+
+        if (IsValidGrid(ref grid))
+            return true;
+
+        int x = 0;
+        int y = 0;
+
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                if (grid[i, j] == 0)
+                {
+                    x = i;
+                    y = j;
+                    break;
+                }
+            }
+        }
+        List<int> possibilities = new List<int>();
+        possibilities = GetAllPossibilities(x, y, ref grid);
+
+        for (int p = 0; p < possibilities.Count; p++)
+        {
+            grid[x, y] = possibilities[p]; //aca sucede la magic
+            if (SolveGrid(ref grid))
+            {
+                return true;
+            }
+            grid[x, y] = 0;
+        }
+
+        return false;
+    }
+
+    List<int> GetAllPossibilities(int x, int y, ref int[,] grid)
+    {
+        List<int> possibilities = new List<int>();
+        for (int val = 1; val <= 9; val++)
+        {
+            if (CheckAll(x, y, val, ref grid))
+            {
+                possibilities.Add(val);
+            }
+        }
+        return possibilities;
+    }
+    #endregion
+
+    void CreateRiddleGrid(ref int[,] sGrid, ref int[,] rGrid)
+    {
+        //Copiar la anterior solvegrid
+        //for (int i = 0; i < 9; i++)
+        //{
+        //    for (int j = 0; j < 9; j++)
+        //    {
+        //        riddleGrid[i, j] = solvedGrid[i, j];
+        //    }
+        //}
+        System.Array.Copy(sGrid, rGrid, sGrid.Length);        
+
+        //Setear la dificulatad
+        SetDifficulty();
+
+        //borrar los numeros que no queremos
+        for (int i = 0; i < piecesToErase; i++)
+        {
+            int x1 = Random.Range(0, 9);
+            int y1 = Random.Range(0, 9);
+            //Si hay un cero lo tiro de nuevo hasta encontrar uno sin 0
+            while (rGrid[x1, y1] == 0)
+            {
+                x1 = Random.Range(0, 9);
+                y1 = Random.Range(0, 9);
+            }
+            //una vez que lo encontamos sin 0 lo sesteamos a 0
+            rGrid[x1, y1] = 0;
+        }
+        DebugGrid(ref riddleGrid);
+    }
+
+
 }
 
 public enum Dificulties

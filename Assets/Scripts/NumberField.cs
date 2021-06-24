@@ -41,4 +41,16 @@ public class NumberField : MonoBehaviour
         number.color = Color.black; //Este es un naranjita que me gusto jeje. #F06A00
         board.SetInputInRiddle(x1, y1, value);
     }
+
+    public int GetX() => x1;
+
+    public int GetY() => y1;
+
+    public void SetHint(int value)
+    {
+        this.value = value;
+        number.text = value.ToString();
+        number.color = Color.green;
+        GetComponentInParent<Button>().interactable = false;
+    }
 }
