@@ -6,6 +6,8 @@ public class Board : MonoBehaviour
 {
     //[SerializeField] int sizeArray;
 
+    [SerializeField] GameObject winPanel, keepTrying;
+
     List<NumberField> fieldList = new List<NumberField>();
 
     [SerializeField] int shuffleAmount;
@@ -22,14 +24,10 @@ public class Board : MonoBehaviour
 
     [SerializeField] Dificulties difficulty;
 
+    public Dificulties Difficulty { get => difficulty; set => difficulty = value; }
+
     void Start()
     {
-        FillGridBase(ref solvedGrid);
-        SolveGrid(ref solvedGrid);
-        CreateRiddleGrid(ref solvedGrid, ref riddleGrid);
-        CreateButtons();
-
-
         //VIEJOS METODOS
         //InitGrid(ref solvedGrid);
         ////DebugGrid(ref solvedGrid);
@@ -37,6 +35,13 @@ public class Board : MonoBehaviour
         //CreateRiddleGrid();
     }
 
+    public void StartGame()
+    {
+        FillGridBase(ref solvedGrid);
+        SolveGrid(ref solvedGrid);
+        CreateRiddleGrid(ref solvedGrid, ref riddleGrid);
+        CreateButtons();
+    }
 
     void InitGrid(ref int[,] grid)
     {
@@ -202,7 +207,7 @@ public class Board : MonoBehaviour
 
     public void SetDifficulty()
     {
-        switch (difficulty)
+        switch (Difficulty)
         {
             case Dificulties.DEBUG:
                 piecesToErase = 3;
@@ -230,9 +235,9 @@ public class Board : MonoBehaviour
     public void CheckComplete()
     {
         if (CheckIfWon())
-            Debug.Log("Win");
+            winPanel.SetActive(true);
         else
-            Debug.Log("Loose");
+            keepTrying.SetActive(true);
     }
     bool CheckIfWon()
     {
@@ -423,7 +428,7 @@ public class Board : MonoBehaviour
         //        riddleGrid[i, j] = solvedGrid[i, j];
         //    }
         //}
-        System.Array.Copy(sGrid, rGrid, sGrid.Length);        
+        System.Array.Copy(sGrid, rGrid, sGrid.Length);
 
         //Setear la dificulatad
         SetDifficulty();
