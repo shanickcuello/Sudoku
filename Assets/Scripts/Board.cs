@@ -449,8 +449,6 @@ public class Board : MonoBehaviour
         }
         DebugGrid(ref riddleGrid);
     }
-
-
 }
 
 public enum Dificulties
